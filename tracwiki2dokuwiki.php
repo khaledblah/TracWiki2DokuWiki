@@ -159,10 +159,10 @@ class TracWiki2DokuWiki {
     $line = preg_replace("/\[wiki:/", "[", $line);
     // links without description
     $line = preg_replace("/\[([^ \]]+)\]/u", "[[$1]]", $line );
-    //echo "after link w/o description: $line\n";
     // links with description
     $line = preg_replace( "/\[([^ \]]+) ([^\]]+)\]/u", "[[$1|$2]]", $line );
-    //echo "after link w description: $line";
+    // replace the forward slash "/" with ":" in links
+    $line = preg_replace_callback("/\[\[(.*)\]\]/u", "replace_namespace", $line );
     return $line;
   }
 
@@ -175,6 +175,11 @@ class TracWiki2DokuWiki {
   private function replace_numberedlists($line) {
     return( preg_replace("/^( +)1\. /", "$1 - ", $line) );
   }
-
 }
+
+function replace_namespace($match) {
+  return preg_replace('/([^\/])\/{1}([^\/])/', '$1:$2', $match[0]);
+}
+
 ?>
+
