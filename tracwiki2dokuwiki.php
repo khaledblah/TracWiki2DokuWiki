@@ -132,6 +132,15 @@ class TracWiki2DokuWiki {
     return $fn;
   }
   
+  private function replace_image( $line ) {
+    return preg_replace("/\[\[Image\((.*)\)\]\]/", "{{\$1}}", $line);
+  }
+
+  private function replace_anchor( $line ) {
+    // this requires the anchor plugin: https://www.dokuwiki.org/plugin:anchor
+    return preg_replace("/\[\[?=#(.*)\]?\]/", "{{anchor:\$1}}", $line);
+  }
+
   private function workOnAttachment($pattern, &$line) {
     if ($count = preg_match_all($pattern, $line, $hits)) {
       for ($i=0; $i<$count; $i++) {
