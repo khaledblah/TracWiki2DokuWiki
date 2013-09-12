@@ -50,7 +50,7 @@ class TracWiki2DokuWiki {
         $line = substr($line, 0, -2) . "^";
     }
     // real trac headings: format: ||= Table Header =||=Header =||
-    $line = preg_replace( "/\|\|=([^=])+=/", "^ $1", $line, -1, $count);
+    $line = preg_replace("/\|\|=([^=]+)=(.*)/", "^ $1 $2", $line, -1, $count);
     if ($count > 0) {
       $line = trim($line);
       if (strpos($line,"||")==strlen($line)-2)
@@ -106,6 +106,17 @@ class TracWiki2DokuWiki {
   }
 
   private function replace_br( $line ) {
+    $matches = array();
+    if (preg_match_all('/\[\[BR\]\]([^\n]+)/U', $line, $matches)) {
+      // search for occourrences of [[BR]] where there is no newline after, a
+      // newline character will be added. This works for multiple occourences
+      // of [[BR]] in one line, too.
+      for($i = 0; $i < count($matches[0]); $i++) {
+        $search = preg_quote($matches[0][$i]);
+        $replace = preg_quote("\\\\\n") . preg_quote($matches[1][$i]);
+        $line = preg_replace('/' . $search . '/', $replace, $line);
+      }
+    }
     return( str_replace("[[BR]]", "\\\\", $line) );
   }
 
@@ -133,7 +144,12 @@ class TracWiki2DokuWiki {
   }
   
   private function replace_image( $line ) {
-    return preg_replace("/\[\[Image\((.*)\)\]\]/", "{{\$1}}", $line);
+    return preg_replace("/\[\[Image\(([^,]+)(,.*)?\)\]\]/", "{{:\$1}}", $line);
+  }
+
+  private function replace_anchor( $line ) {
+    // this requires the anchor plugin: https://www.dokuwiki.org/plugin:anchor
+    return preg_replace("/\[\[?=#(.*)\]?\]/", "{{anchor:\$1}}", $line);
   }
 
   private function replace_anchor( $line ) {
@@ -170,8 +186,10 @@ class TracWiki2DokuWiki {
     $line = preg_replace("/\[([^ \]]+)\]/u", "[[$1]]", $line );
     // links with description
     $line = preg_replace( "/\[([^ \]]+) ([^\]]+)\]/u", "[[$1|$2]]", $line );
-    // replace the forward slash "/" with ":" in links
-    $line = preg_replace_callback("/\[\[(.*)\]\]/u", "replace_namespace", $line );
+    if (strpos($line, "http") === FALSE) {
+      // replace the forward slash "/" with ":" in links
+      $line = preg_replace_callback("/\[\[(.*)\]\]/u", "replace_namespace", $line );
+    }
     return $line;
   }
 
