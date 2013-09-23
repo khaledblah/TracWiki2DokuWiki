@@ -40,47 +40,16 @@ class TracWiki2DokuWiki {
 
   /** functions starting with replace_ called in their order of appearance **/
 
-  private function replace_table_heading( $line ) {
-    // match manually bolded headings
-    $line = preg_replace( "/\|\|[ ]*'''([^']*)'''/", "^ $1", $line, -1, $count);
-    if ($count > 0) {
-      $line = trim($line);
-      if (strpos($line,"||")==strlen($line)-2)
-        // if first occurence of "||" are the last two characters, they have to be replaced by "^"
-        $line = substr($line, 0, -2) . "^";
-    }
-    // real trac headings: format: ||= Table Header =||=Header =||
-    $line = preg_replace("/\|\|=([^=]+)=(.*)/", "^ $1 $2", $line, -1, $count);
-    if ($count > 0) {
-      $line = trim($line);
-      if (strpos($line,"||")==strlen($line)-2)
-        // if first occurence of "||" are the last two characters, they can be removed
-        $line = substr($line, 0, -2);
-    }
-    return $line;
-    //$line =  preg_replace( "/\|\*\*/", "^", $line );
-    //$line =  preg_replace( "/\*\*\|/", "^", $line );
-    //return( preg_replace( "/[\*]*\^[\*]*/", "^", $line ) );
-  }
-
-  private function replace_table( $line ) {
-    // insert spaces for empty cells
-    $line = preg_replace("/\|\|\|\|/", "|| ||", $line);
-    
-    // real conversion
-    return( preg_replace( "/\|\|/u", "|", $line ) );
-  }
-
   private function replace_headings( $line ) {
-    $line = preg_replace( "/^= ([^=]+)=/mu", "====== $1======", $line, 1, $count );
+    $line = preg_replace( "/^= ([^=]+)(=)?/mu", "====== $1======", $line, 1, $count );
     if ($count>0) return $line;
-    $line = preg_replace( "/^== ([^=]+)==/mu", "===== $1=====", $line, 1, $count );
+    $line = preg_replace( "/^== ([^=]+)(==)?/mu", "===== $1=====", $line, 1, $count );
     if ($count>0) return $line;
-    $line = preg_replace( "/^=== ([^\=]+)===/mu", "==== $1====", $line, 1, $count );
+    $line = preg_replace( "/^=== ([^\=]+)(===)?/mu", "==== $1====", $line, 1, $count );
     if ($count>0) return $line;
-    $line = preg_replace( "/^==== ([^=]+)====/mu", "== $1==", $line, 1, $count );
+    $line = preg_replace( "/^==== ([^=]+)(====)?/mu", "== $1==", $line, 1, $count );
     if ($count>0) return $line;
-    $line = preg_replace( "/^===== ([^=]+)=====/mu", "= $1=", $line, 1, $count );
+    $line = preg_replace( "/^===== ([^=]+)(=====)?/mu", "= $1=", $line, 1, $count );
     return $line;
   }
 
@@ -105,23 +74,39 @@ class TracWiki2DokuWiki {
     return( preg_replace( "/''([^']+)''/u", "//$1//", $line ) );
   }
 
+  private function replace_strikethrough($line) {
+    return(preg_replace( "/~~([^~]+)~~/u", "<del>$1</del>", $line));
+  }
+
+  private function replace_superscript($line) {
+    return(preg_replace( "/\^([^\^]+)\^/u", "<sup>$1</sup>", $line));
+  }
+
+  private function replace_subscript($line) {
+    return(preg_replace( "/,,([^,]+),,/u", "<sub>$1</sub>", $line));
+  }
+
   private function replace_br( $line ) {
     $matches = array();
-    if (preg_match_all('/\[\[BR\]\]([^\n]+)/U', $line, $matches)) {
+    if ($count = preg_match_all('/\[\[BR\]\]([^\n]+)/iU', $line, $matches)) {
       // search for occourrences of [[BR]] where there is no newline after, a
       // newline character will be added. This works for multiple occourences
       // of [[BR]] in one line, too.
-      for($i = 0; $i < count($matches[0]); $i++) {
+      for($i = 0; $i < $count; $i++) {
         $search = preg_quote($matches[0][$i]);
-        $replace = preg_quote("\\\\\n") . preg_quote($matches[1][$i]);
+        $replace = preg_quote("\\\\\\\n") . preg_quote($matches[1][$i]);
         $line = preg_replace('/' . $search . '/', $replace, $line);
       }
     }
-    return( str_replace("[[BR]]", "\\\\", $line) );
+    return( preg_replace("/\[\[BR\]\]/i", "\\\\\\", $line) );
   }
 
   private function replace_toc( $line ) {
-    return( str_replace("[[TOC]]", "", $line) );
+    return(preg_replace("/\[\[TOC\]\]/i", "", $line));
+  }
+
+  private function replace_page_outline( $line ) {
+    return(preg_replace("/\[\[PageOutline\(.+\)\]\]/i", "", $line));
   }
 
   private function replace_ignore_CamelCase( $line ) {
@@ -130,6 +115,48 @@ class TracWiki2DokuWiki {
     return $line;
   }
   
+  private function replace_table_heading( $line ) {
+    // match manually bolded headings
+    $line = preg_replace( "/\|\|[ ]*'''([^']*)'''/", "^ $1", $line, -1, $count);
+    if ($count > 0) {
+      $line = trim($line);
+      if (strpos($line,"||")==strlen($line)-2)
+        // if first occurence of "||" are the last two characters, they have to be replaced by "^"
+        $line = substr($line, 0, -2) . "^";
+    }
+
+    // real trac headings: format: ||= Table Header =||=Header =||
+    $matches = array();
+    if ($count = preg_match_all("/\|\|=([^=]+)=/", $line, $matches)) {
+      for($i = 0; $i < $count; $i++) {
+        $search = preg_quote($matches[0][$i], '/');
+        $replace = '^ ' . preg_quote($matches[1][$i]) . ' ';
+        $line = preg_replace('/' . $search . '/', $replace, $line);
+      }
+    }
+
+    # $line = preg_replace("/\|\|=([^=]+)=(.*)/", "^ $1 $2", $line, -1, $count);
+    if ($count > 0) {
+      $line = trim($line);
+      if (strpos($line,"||")==strlen($line)-2)
+        // if first occurence of "||" are the last two characters, they can be removed
+        // $line = substr($line, 0, -2);
+        $line = str_replace('||', '^', $line);
+    }
+    return $line;
+    //$line =  preg_replace( "/\|\*\*/", "^", $line );
+    //$line =  preg_replace( "/\*\*\|/", "^", $line );
+    //return( preg_replace( "/[\*]*\^[\*]*/", "^", $line ) );
+  }
+
+  private function replace_table( $line ) {
+    // insert spaces for empty cells
+    $line = preg_replace("/\|\|\|\|/", "|| ||", $line);
+    
+    // real conversion
+    return( preg_replace( "/\|\|/u", "|", $line ) );
+  }
+
   private static function tracFileName($fn) {
     $fn = rawurlencode($fn);
     return $fn;
@@ -145,11 +172,6 @@ class TracWiki2DokuWiki {
   
   private function replace_image( $line ) {
     return preg_replace("/\[\[Image\(([^,]+)(,.*)?\)\]\]/", "{{:\$1}}", $line);
-  }
-
-  private function replace_anchor( $line ) {
-    // this requires the anchor plugin: https://www.dokuwiki.org/plugin:anchor
-    return preg_replace("/\[\[?=#(.*)\]?\]/", "{{anchor:\$1}}", $line);
   }
 
   private function replace_anchor( $line ) {
@@ -178,14 +200,39 @@ class TracWiki2DokuWiki {
 
   private function replace_link( $line ) {
     if ($this->workOnAttachment("/\[attachment:[\"']([^\"]+)[\"'] *([^\]]*)\]/u", $line)) return $line;
+    if ($this->workOnAttachment("/\[attachment:.*:([^ ]+) ([^\]]+)\]/u", $line)) return $line;
     if ($this->workOnAttachment("/\[attachment:([^ ]+) ([^\]]+)\]/u", $line)) return $line;
     if ($this->workOnAttachment("/\[attachment:([^ ]+)\]/u", $line)) return $line;
+    // urlencode a "|" character in URIs
+    $line = preg_replace("/http(s)?:\/\/(.*)\|/", "http$1://$2" . urlencode("|"), $line);
     // remove [wiki: prefix
     $line = preg_replace("/\[wiki:/", "[", $line);
     // links without description
-    $line = preg_replace("/\[([^ \]]+)\]/u", "[[$1]]", $line );
+    $prefix = WIKI_PREFIX . ':';
+    if (preg_match('/\[http(s)?([^ \]]+)\]/u', $line)) {
+      $prefix = '';
+    }
+    $line = preg_replace("/\[([^ \]]+)\]/u", "[[" . $prefix . "$1]]", $line );
+
     // links with description
-    $line = preg_replace( "/\[([^ \]]+) ([^\]]+)\]/u", "[[$1|$2]]", $line );
+    /*
+    $matches = array();
+    if ($count = preg_match_all("/\[?\[([^ \]]+) ([^\]]+)\]\]?/uU", $line, $matches)) {
+      error_log(__FILE__ . ': ' . __LINE__);
+      error_log(print_r($matches, TRUE));
+      for($i = 0; $i < $count; $i++) {
+        $search = preg_quote($matches[0][$i]);
+        $replace = preg_quote($matches[1][$i]);
+        // $line = preg_replace('/' . $search . '/', $replace, $line);
+      }
+    }
+    */
+    if (preg_match('/\[?\[http(s)?([^ \]]+) ([^\]]+)\]\]?/u', $line)) {
+      $prefix = '';
+    }
+    $line = preg_replace("/\[?\[([^ \]]+) ([^\]]+)\]\]?/u", "[[" . $prefix . "$1|$2]]", $line);
+    
+
     if (strpos($line, "http") === FALSE) {
       // replace the forward slash "/" with ":" in links
       $line = preg_replace_callback("/\[\[(.*)\]\]/u", "replace_namespace", $line );

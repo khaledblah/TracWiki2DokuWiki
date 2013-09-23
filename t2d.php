@@ -25,8 +25,15 @@ if (0) {
   exit();
 }
 
-$sourceDir = 'exported/';
-$targetDir = 'converted/';
+$sourceDir    = 'exported/';
+$targetDir    = 'converted/';
+$targetPrefix = 'oldtrac/';
+if (strlen($targetPrefix)) {
+  define(WIKI_PREFIX, 'oldtrac');
+}
+else {
+  define(WIKI_PREFIX, '');
+}
 // if conversion of Umlauts does not work, issue "locale-gen de_DE" as root
 setlocale(LC_CTYPE, 'de_DE');
 
@@ -43,7 +50,7 @@ while (false !== ($file = readdir($handle))) {
     $targetFileName = strtolower($file);
     $targetFileName = urldecode($targetFileName);
     $targetFileName = iconv("UTF-8","ASCII//TRANSLIT", $targetFileName);
-    $targetFile = $targetDir . $targetFileName . ".txt";
+    $targetFile = $targetDir . $targetPrefix . $targetFileName . ".txt";
     // dokuwiki uses subdirs for namespaces - TRAC separtes them using "/"
     // we have to create the directories
     $currentTargetDir = dirName($targetFile);
