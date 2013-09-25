@@ -26,3 +26,4 @@
 ## Issues
  * DokuWiki does not support file attachments to pages: All files have to 
    be linked in the page.
+ * Issues can't be opened: See https://github.com/koppor/TracWiki2DokuWiki/issues/1
