@@ -27,9 +27,10 @@ if (0) {
 
 $sourceDir    = 'exported/';
 $targetDir    = 'converted/';
-$targetPrefix = 'oldtrac/';
+// this is a namespace prefix that will be added to all internal links
+$targetPrefix = '';
 if (strlen($targetPrefix)) {
-  define(WIKI_PREFIX, 'oldtrac');
+  define(WIKI_PREFIX, $targetPrefix);
 }
 else {
   define(WIKI_PREFIX, '');

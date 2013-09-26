@@ -1,6 +1,7 @@
 # TracWiki2DokuWiki 
  * (c) Alex N J, 2009. Free to use, but use at your own risk.
  * modified by Oliver Kopp, 2012
+ * modified by Khaled Blah, 2013
 
 ## Contained files
  * tracwiki2dokuwiki.php: class doing the conversion for one page
@@ -27,3 +28,4 @@
  * DokuWiki does not support file attachments to pages: All files have to 
    be linked in the page.
  * Issues can't be opened: See https://github.com/koppor/TracWiki2DokuWiki/issues/1
+ * Converting several links in one line does not work
